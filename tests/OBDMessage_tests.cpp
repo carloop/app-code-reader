@@ -6,7 +6,7 @@
 #include "string.h"
 using namespace std;
 
-TEST_CASE("OBDMessage::id", "") {
+TEST_CASE("OBDMessage::id") {
   OBDMessage sut;
   CANMessage msg;
   msg.id = 0x7E8;
@@ -14,7 +14,7 @@ TEST_CASE("OBDMessage::id", "") {
   REQUIRE(sut.id() == 0x7E8);
 }
 
-TEST_CASE("OBDMessage::addMessageData", "") {
+TEST_CASE("OBDMessage::addMessageData") {
   OBDMessage sut;
   CANMessage msg;
   msg.len = 8;
@@ -92,7 +92,7 @@ TEST_CASE("OBDMessage::addMessageData", "") {
   }
 }
 
-TEST_CASE("OBDMessage::flowControlMessage", "") {
+TEST_CASE("OBDMessage::flowControlMessage") {
   OBDMessage sut;
   CANMessage msg;
   msg.id = 0x7E8;

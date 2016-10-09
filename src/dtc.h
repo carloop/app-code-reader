@@ -10,14 +10,23 @@
 #include "OBDMessage.h"
 
 struct DTC {
-  enum Type {
+  enum Type : uint8_t {
     STORED_DTC,
     PENDING_DTC,
     CLEARED_DTC,
 
     NUM_TYPES
   } type;
+  char letter;
   uint16_t code;
+
+  DTC(Type type, char letter, uint16_t code)
+    : type(type), letter(letter), code(code) {
+  }
+  DTC(Type type, uint16_t code);
+  bool operator==(const DTC &other) const {
+    return type == other.type && letter == other.letter && code == other.code;
+  }
 };
 
 #define OBD_BROADCAST_ID 0x7DF
@@ -27,6 +36,8 @@ struct DTC {
 #define OBD_SERVICE_SHOW_STORED_DTCS 0x03
 #define OBD_SERVICE_SHOW_PENDING_DTCS 0x07
 #define OBD_SERVICE_SHOW_CLEARED_DTCS 0x0A
+
+#define OBD_SERVICE_RESPONSE_OFFSET 0x40
 
 class CodeReader {
 public:
@@ -46,12 +57,23 @@ public:
   void process();
 
   void start();
+  bool done() {
+    return state == IDLE;
+  }
+
+  StatesE getState() const {
+    return state;
+  }
+
+  const CodesT &getCodes() const {
+    return codes;
+  }
 
 private:
   uint8_t obdServiceForDTCType(DTC::Type type);
   void transmitReadCodes(uint8_t service);
   bool receiveReadCodes();
-  void parseCodes();
+  bool parseCodes();
 
   CANChannel *can;
   CodesT codes;

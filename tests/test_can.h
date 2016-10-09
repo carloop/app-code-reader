@@ -30,7 +30,7 @@ struct CANMessage
        this->data[i] = N > i ? (uint8_t)data[i] : 0;
      }
    }
-   bool operator==(const CANMessage &other) {
+   bool operator==(const CANMessage &other) const {
      bool result = id == other.id &&
        size == other.size &&
        extended == other.extended &&

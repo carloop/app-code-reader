@@ -1,5 +1,17 @@
 #include "dtc.h"
 
+DTC::DTC(DTC::Type type, uint16_t code) {
+  this->type = type;
+  uint8_t letterCode = code >> 14;
+  switch(letterCode) {
+    case 0: this->letter = 'P'; break;
+    case 1: this->letter = 'C'; break;
+    case 2: this->letter = 'B'; break;
+    case 3: this->letter = 'U'; break;
+  }
+  this->code = code & 0x3FFF;
+}
+
 void CodeReader::begin(CANChannel &channel) {
   can = &channel;
 }
@@ -75,8 +87,7 @@ bool CodeReader::receiveReadCodes() {
         can->transmit(obd.flowControlMessage());
       }
 
-      if (obd.complete()) {
-        parseCodes();
+      if (obd.complete() && parseCodes()) {
         return true;
       }
     }
@@ -85,5 +96,34 @@ bool CodeReader::receiveReadCodes() {
   return false;
 }
 
-void CodeReader::parseCodes() {
+bool CodeReader::parseCodes() {
+  auto it = obd.data().begin(); 
+  auto end = obd.data().end();
+  
+  // First byte is the response code
+  if (it != end) {
+    uint8_t response = *it;
+    ++it;
+
+    if (response != obdServiceForDTCType(codeTypeBeingRead) + OBD_SERVICE_RESPONSE_OFFSET) {
+      // negative response, or response for another service
+      // restart wait
+      obd.clear();
+      return false;
+    }
+  }
+
+  // join pairs of data bytes and transform into DTC
+  while (it != end) {
+    uint8_t msb = *it;
+    ++it;
+    if (it != end) {
+      uint8_t lsb = *it;
+      ++it;
+
+      DTC code(codeTypeBeingRead, ((uint16_t)msb << 8) | lsb);
+      codes.push_back(code);
+    }
+  }
+  return true;
 }
