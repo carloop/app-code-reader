@@ -41,7 +41,7 @@ TEST_CASE("CodeReader read codes") {
   reader.process(); reader.process(); reader.process();
 
   // Get one code: P0415
-  can.addRx(CANMessage(0x7e8, { 0x03, 0x43, 0x04, 0x15, 0x00, 0x00, 0x00, 0x00 }));
+  can.addRx(CANMessage(0x7e8, { 0x04, 0x43, 0x01, 0x04, 0x15, 0x00, 0x00, 0x00 }));
   reader.process();
 
   // Verify DTC was stored properly
@@ -62,7 +62,7 @@ TEST_CASE("CodeReader read codes") {
   reader.process(); reader.process(); reader.process();
 
   // Get one code:P0103
-  can.addRx(CANMessage(0x7e8, { 0x03, 0x47, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00 }));
+  can.addRx(CANMessage(0x7e8, { 0x04, 0x47, 0x01, 0x01, 0x03, 0x00, 0x00, 0x00 }));
   reader.process();
 
   // Verify DTC was stored properly
@@ -83,7 +83,7 @@ TEST_CASE("CodeReader read codes") {
   reader.process(); reader.process(); reader.process();
 
   // Get one code:C0001
-  can.addRx(CANMessage(0x7e8, { 0x03, 0x4A, 0x50, 0x01, 0x00, 0x00, 0x00, 0x00 }));
+  can.addRx(CANMessage(0x7e8, { 0x04, 0x4A, 0x01, 0x50, 0x01, 0x00, 0x00, 0x00 }));
   reader.process();
 
   // Verify DTC was stored properly
@@ -95,8 +95,116 @@ TEST_CASE("CodeReader read codes") {
 
   // We are done
   REQUIRE(reader.done() == true);
+  REQUIRE(reader.getError() == false);
 }
 
-// TODO: test with flow control
-// TODO: test with timeout
+TEST_CASE("CodeReader read multiple codes") {
+  CodeReader reader;
+  CANChannel can;
+  CANMessage tx;
+
+  reader.begin(can);
+  reader.start();
+
+  // Sets up variables for reading
+  reader.process();
+
+  // Sends request for stored DTC
+  reader.process();
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7DF, { 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Wait a little bit for receive message
+  reader.process(); reader.process(); reader.process();
+
+  // Get three code: P0415, P1001, P0103
+  can.addRx(CANMessage(0x7e8, { 0x10, 0x08, 0x43, 0x03, 0x04, 0x15, 0x10, 0x01 }));
+  reader.process();
+
+  // Expect flow control
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7E0, { 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Send rest of codes
+  can.addRx(CANMessage(0x7e8, { 0x21, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+  reader.process();
+
+  // Verify DTC was stored properly
+  auto &codes = reader.getCodes();
+  REQUIRE(codes.size() == 3);
+  auto codesIter = codes.begin();
+  REQUIRE(*codesIter == DTC(DTC::STORED_DTC, 'P', 0x415));
+  ++codesIter;
+  REQUIRE(*codesIter == DTC(DTC::STORED_DTC, 'P', 0x1001));
+  ++codesIter;
+  REQUIRE(*codesIter == DTC(DTC::STORED_DTC, 'P', 0x103));
+
+  // No other messages transmitted meanwhile
+  REQUIRE(can.getTx(tx) == false);
+
+  // Sends request for pending DTC
+  reader.process();
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7DF, { 0x01, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Wait a little bit for receive message
+  reader.process(); reader.process(); reader.process();
+
+  // Get no codes
+  can.addRx(CANMessage(0x7e8, { 0x02, 0x47, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+  reader.process();
+
+  // Verify DTC was stored properly
+  REQUIRE(codes.size() == 3);
+
+  // No other messages transmitted meanwhile
+  REQUIRE(can.getTx(tx) == false);
+
+  // Sends request for pending DTC
+  reader.process();
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7DF, { 0x01, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Wait a little bit for receive message
+  reader.process(); reader.process(); reader.process();
+
+  // Get no code
+  can.addRx(CANMessage(0x7e8, { 0x02, 0x4A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+  reader.process();
+
+  // Verify DTC was stored properly
+  REQUIRE(codes.size() == 3);
+
+  // We are done
+  REQUIRE(reader.done() == true);
+  REQUIRE(reader.getError() == false);
+}
+
+TEST_CASE("CodeReader timeout") {
+  CodeReader reader;
+  CANChannel can;
+  CANMessage tx;
+
+  reader.begin(can);
+  reader.start();
+
+  // Sets up variables for reading
+  reader.process();
+
+  // Sends request for stored DTC
+  reader.process();
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7DF, { 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Timeout while waiting for response
+  timeTravel(1100 /* ms */);
+
+  // Process timeout
+  reader.process();
+
+  // We are done
+  REQUIRE(reader.done() == true);
+  REQUIRE(reader.getError() == true);
+}
+
 // TODO: test with negative response?

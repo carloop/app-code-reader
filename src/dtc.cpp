@@ -12,12 +12,18 @@ DTC::DTC(DTC::Type type, uint16_t code) {
   this->code = code & 0x3FFF;
 }
 
+CodeReader::CodeReader() {
+  timeout = defaultTimeout;
+}
+
 void CodeReader::begin(CANChannel &channel) {
   can = &channel;
 }
 
 void CodeReader::start() {
-  state = START_READING_CODES;
+  if (state == IDLE) {
+    state = START_READING_CODES;
+  }
 }
 
 void CodeReader::process() {
@@ -25,6 +31,7 @@ void CodeReader::process() {
   switch (state) {
     case START_READING_CODES:
       codes.clear();
+      error = false;
       codeTypeBeingRead = DTC::STORED_DTC;
       readingCodesStart = millis();
       state = READ_CODE;
@@ -36,6 +43,12 @@ void CodeReader::process() {
       break;
 
     case WAITING_FOR_CODES:
+      if (millis() - readingCodesStart > timeout) {
+        state = IDLE;
+        error = true;
+        break;
+      }
+
       done = receiveReadCodes();
       if (done) {
         codeTypeBeingRead = (DTC::Type)((int)codeTypeBeingRead + 1);
@@ -111,6 +124,12 @@ bool CodeReader::parseCodes() {
       obd.clear();
       return false;
     }
+  }
+
+  // Second byte is the number of codes.
+  // We don't need to store it
+  if (it != end) {
+    ++it;
   }
 
   // join pairs of data bytes and transform into DTC

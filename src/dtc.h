@@ -42,6 +42,7 @@ struct DTC {
 class CodeReader {
 public:
   using CodesT = std::vector<DTC>;
+  using TimeT = unsigned long;
 
   enum StatesE {
     IDLE,
@@ -49,6 +50,10 @@ public:
     READ_CODE,
     WAITING_FOR_CODES,
   };
+
+  static const TimeT defaultTimeout = 500;
+
+  CodeReader();
 
   // Call in setup()
   void begin(CANChannel &channel);
@@ -69,6 +74,14 @@ public:
     return codes;
   }
 
+  bool getError() const {
+    return error;
+  }
+
+  void setTimeout(TimeT timeout) {
+    this->timeout = timeout;
+  }
+
 private:
   uint8_t obdServiceForDTCType(DTC::Type type);
   void transmitReadCodes(uint8_t service);
@@ -80,5 +93,7 @@ private:
   OBDMessage obd;
   StatesE state;
   DTC::Type codeTypeBeingRead;
-  unsigned long readingCodesStart;
+  TimeT readingCodesStart;
+  TimeT timeout;
+  bool error;
 };
