@@ -1,6 +1,7 @@
 /* Run these tests on a laptop
  */
 #include "catch.hpp"
+#define DEBUG_DTC
 #include "../src/dtc.h"
 #include <iomanip>
 using namespace std;
@@ -22,7 +23,7 @@ std::ostream& operator << (std::ostream &os, DTC const &value) {
 }
 
 TEST_CASE("CodeReader read codes") {
-  CodeReader reader;
+  CodeReader reader = CodeReader();
   CANChannel can;
   CANMessage tx;
 
@@ -99,7 +100,7 @@ TEST_CASE("CodeReader read codes") {
 }
 
 TEST_CASE("CodeReader read multiple codes") {
-  CodeReader reader;
+  CodeReader reader = CodeReader();
   CANChannel can;
   CANMessage tx;
 
@@ -181,9 +182,11 @@ TEST_CASE("CodeReader read multiple codes") {
 }
 
 TEST_CASE("CodeReader timeout") {
-  CodeReader reader;
+  CodeReader reader = CodeReader();
   CANChannel can;
   CANMessage tx;
+
+  timeTravel(0);
 
   reader.begin(can);
   reader.start();
@@ -207,4 +210,53 @@ TEST_CASE("CodeReader timeout") {
   REQUIRE(reader.getError() == true);
 }
 
-// TODO: test with negative response?
+TEST_CASE("CodeClearer clear codes") {
+  CodeClearer clearer = CodeClearer();
+  CANChannel can;
+  CANMessage tx;
+
+  clearer.begin(can);
+  clearer.start();
+
+  // Sends request to clear codes
+  clearer.process();
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7DF, { 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Wait a little bit for receive message
+  clearer.process(); clearer.process(); clearer.process();
+
+  // Acknowledge
+  can.addRx(CANMessage(0x7e8, { 0x01, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+  clearer.process();
+
+  // We are done
+  REQUIRE(clearer.done() == true);
+  REQUIRE(clearer.getError() == false);
+}
+
+TEST_CASE("CodeClearer timeout") {
+  CodeClearer clearer = CodeClearer();
+  CANChannel can;
+  CANMessage tx;
+
+  timeTravel(0);
+
+  clearer.begin(can);
+  clearer.start();
+
+  // Sends request to clear codes
+  clearer.process();
+  REQUIRE(can.getTx(tx) == true);
+  REQUIRE(tx == CANMessage(0x7DF, { 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }));
+
+  // Timeout while waiting for response
+  timeTravel(1100 /* ms */);
+
+  // Process timeout
+  clearer.process();
+
+  // We are done
+  REQUIRE(clearer.done() == true);
+  REQUIRE(clearer.getError() == true);
+}

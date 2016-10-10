@@ -30,7 +30,7 @@ To run the unit tests, run `make` in the root of the repository.
 
 ## License
 
-Copyright 2016 Julien Vanier
+Copyright 2016 1000 Tools, Inc.
 
-Distributed under the MIT license. See LICENSE.txt for more details.
+Distributed under the MIT license. See [LICENSE](/license) for details.
 
