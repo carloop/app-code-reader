@@ -1,0 +1,34 @@
+.container {
+  width: 970px !important;
+}
+
+.main-headline {
+  padding: 70px 0;
+  text-align: center;
+}
+
+.login-form {
+  text-align: center;
+}
+
+.login-form > .prompt {
+  font-size: 32px;
+}
+
+.login-form > .form-control,
+.login-form > .btn {
+  margin: 10px auto;
+  max-width: 360px;
+}
+
+.login-form > .help {
+  display: block;
+  margin-top: 32px;
+  color: #333;
+  font-weight: bold;
+}
+
+.login-form > .error {
+  color: red;
+}
+

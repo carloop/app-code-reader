@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Carloop Code Reader</title>
+    <meta name="description" content="Carloop app to read and clear diagnostic trouble codes in a car">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0">
+    
+    <!-- Bootstrap and Flat UI-->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flat-ui/2.3.0/css/flat-ui.min.css" rel="stylesheet">
+    <link href="carloop-app.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="container">
+      <nav class="navbar navbar-inverse navbar-embossed" role="navigation">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="https://www.carloop.io">Carloop</a>
+        </div>
+        <ul class="nav navbar-nav navbar-left">
+          <li><a href="https://carloop.github.io">Back to apps</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="https://carloop.readme.io">Documentation</a></li>
+          <li><a href="https://github.com/carloop/app-code-reader">Source code</a></li>
+      </nav>
+      <div id="app">
+        <div class="main-headline">
+          <h1 class="main-title">Code Reader App</h1>
+        </div>
+      </div>
+    
+      <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/particle-api-js/5/particle.min.js"></script>
+      <script src="code-reader.js"></script>
+  </body>
+</html>

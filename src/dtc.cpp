@@ -15,7 +15,7 @@
 #include "dtc.h"
 
 // Uncomment DEBUG_DTC to get debug info on Serial while reading codes
-// #define DEBUG_DTC
+//#define DEBUG_DTC
 
 #ifdef DEBUG_DTC
   #ifdef UNIT_TEST
@@ -210,6 +210,7 @@ bool CodeReader::parseCodes() {
 
 
 void CodeClearer::begin(CANChannel &channel, CodeClearer::TimeT timeout) {
+  DEBUG_PRINT("Initializing code clearer");
   this->timeout = timeout;
   can = &channel;
 }

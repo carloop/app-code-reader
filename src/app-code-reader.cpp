@@ -50,6 +50,7 @@ void setup() {
   Serial.begin(9600);
   carloop.begin();
   reader.begin(carloop.can());
+  clearer.begin(carloop.can());
 
   Particle.function("readCodes", readCodes);
   Particle.function("clearCodes", clearCodes);
@@ -58,7 +59,9 @@ void setup() {
 // Remote function to start reading codes
 int readCodes(String unused) {
   Serial.println("Reading codes...");
-  Particle.publish("codes/start", PRIVATE);
+  if (Particle.connected()) {
+    Particle.publish("codes/start", PRIVATE);
+  }
   reader.start();
   return 0;
 }
@@ -66,8 +69,10 @@ int readCodes(String unused) {
 // Remote function to clear codes
 int clearCodes(String unused) {
   Serial.println("Clearing codes...");
-  Particle.publish("codes/clear", PRIVATE);
-
+  if (Particle.connected()) {
+    Particle.publish("codes/clear", PRIVATE);
+  }
+  clearer.start();
   return 0;
 }
 
@@ -106,7 +111,9 @@ void processReadingCodes() {
 void publishCodes() {
   if (reader.getError()) {
     Serial.println("Error while reading codes. Is Carloop connected to a car with the ignition on?");
-    Particle.publish("codes/error", PRIVATE);
+    if (Particle.connected()) {
+      Particle.publish("codes/error", PRIVATE);
+    }
     return;
   }
 
@@ -148,7 +155,9 @@ void publishCodes() {
     result += codeStr;
   }
 
-  Particle.publish("codes/result", result, PRIVATE);
+  if (Particle.connected()) {
+    Particle.publish("codes/result", result, PRIVATE);
+  }
 }
 
 // Let the code clearer do its thing
@@ -160,10 +169,14 @@ void processClearingCodes() {
   if (done && !previouslyDone) {
     if (clearer.getError()) {
       Serial.println("Error while clearing codes. Is Carloop connected to a car with the ignition on?");
-      Particle.publish("codes/error", PRIVATE);
+      if (Particle.connected()) {
+        Particle.publish("codes/error", PRIVATE);
+      }
     } else {
       Serial.println("Success!");
-      Particle.publish("codes/cleared", PRIVATE);
+      if (Particle.connected()) {
+        Particle.publish("codes/cleared", PRIVATE);
+      }
     }
   }
   previouslyDone = done;
