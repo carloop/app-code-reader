@@ -10,7 +10,10 @@ var appFiles = [
   "dtc.h",
   "OBDMessage.cpp",
   "OBDMessage.h",
-  "project.properties",
+  "carloop/TinyGPS++.cpp",
+  "carloop/TinyGPS++.h",
+  "carloop/carloop.h",
+  "carloop/carloop.cpp",
 ];
 
 var templates = {
@@ -93,7 +96,8 @@ function selectDeviceForm(force) {
         setDevice($("#device").val());
         mainUI();
       });
-    }, function (err) {
+    })
+    .catch(function (err) {
       showError();
     });
   } else {
@@ -107,18 +111,71 @@ function mainUI() {
   var $flashButton = $("#flash-button").on('click', flashApp);
 }
 
+function timeoutPromise(ms) {
+  return new Promise(function (fulfill, reject) {
+    setTimeout(function () {
+      reject(new Error("Timeout"));
+    }, ms);
+  });
+}
+
 function flashApp() {
+  log("Start flashing...");
+  var files = {};
 
   var filePromises = appFiles.map(function (f) {
-    return $.ajax(codeUrl + "/" + f);
+    return $.ajax(codeUrl + "/" + f)
+    .then(function (data) {
+      files[f] = new Blob([data], { type: "text/plain" });
+    });
   });
 
   Promise.all(filePromises)
-  .then(function (files) {
-    console.log("finished downloading files");
+  .then(function () {
+    var flashPromise = particle.flashDevice({
+      deviceId: device,
+      files: files,
+      auth: token
+    });
+
+    // Add timeout to flash
+    return Promise.race([flashPromise, timeoutPromise(10000)]);
+  })
+  .then(function (data) {
+    var body = data.body;
+
+    if (body.ok) {
+      log("Done flashing!");
+    } else {
+      error("Error during flash.");
+      error(body.errors.join("\n"));
+    }
   }, function (err) {
+    if (err.message == "Timeout") {
+      error("Timeout during flash. Is your device connected to the Internet (breathing cyan)?");
+      return;
+    }
+
+    throw err;
+  })
+  .catch(function (err) {
+    console.error(err);
     showError();
   });
+}
+
+function log(message) {
+  printToConsole(message, 'info');
+}
+
+function error(message) {
+  printToConsole(message, 'error');
+}
+
+function printToConsole(message, type) {
+  var $el = $('<div class="' + type + '"/>');
+  $el.text(message);
+  $("#console").append($el);
 }
 
 function showError() {
