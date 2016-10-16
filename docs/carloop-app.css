@@ -22,9 +22,11 @@
 }
 
 .login-form > .help {
-  display: block;
   margin-top: 32px;
   color: #333;
+}
+
+.help a {
   font-weight: bold;
 }
 
