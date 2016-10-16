@@ -44,6 +44,10 @@
 
 }
 
+.btn-float-right {
+  float: right;
+}
+
 .info-panel {
   border: 2px solid #bdc3c7;
   border-radius: 6px;  

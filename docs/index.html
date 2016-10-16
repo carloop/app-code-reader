@@ -65,8 +65,17 @@
       </script>
     
       <script id="main-ui" type="text/template">
-        <h1>Main UI</h1>
-        <button id="flash-button" class="btn btn-lg btn-warning">Flash app to my Carloop</button>
+        <button id="logout-button" class="btn btn-sm btn-default btn-float-right">Log out</button>
+        <h1>Code Reader App</h1>
+        <div class="row">
+          <div class="col-sm-6">
+            <button id="read-codes" class="btn btn-lg btn-primary">Read trouble codes</button>
+            <button id="clear-codes" class="btn btn-lg btn-info">Clear trouble codes</button>
+          </div>
+          <div class="col-sm-6 text-right">
+            <button id="flash-button" class="btn btn-lg btn-warning">Flash this app to my Carloop</button>
+          </div>
+        </div>
         <div id="console" class="info-panel"></div>
       </script>
 
