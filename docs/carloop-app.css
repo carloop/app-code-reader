@@ -34,3 +34,21 @@
   color: red;
 }
 
+.main-error {
+  color: red;
+  text-align: center;
+}
+
+.main-ui {
+  text-align: center;
+
+}
+
+.info-panel {
+  border: 2px solid #bdc3c7;
+  border-radius: 6px;  
+  margin: 15px 0;
+  min-height: 300px;
+  padding: 8px 12px;
+  width: 100%;
+}

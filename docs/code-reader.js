@@ -3,6 +3,16 @@ var token;
 var device;
 var $app = $("#app");
 
+var codeUrl = "https://raw.githubusercontent.com/carloop/app-code-reader/master/src/";
+var appFiles = [
+  "app-code-reader.cpp",
+  "dtc.cpp",
+  "dtc.h",
+  "OBDMessage.cpp",
+  "OBDMessage.h",
+  "project.properties",
+];
+
 var templates = {
   loginForm: _.template($("#template-login-form").text()),
   selectDevice: _.template($("#template-select-device").text()),
@@ -93,6 +103,22 @@ function selectDeviceForm(force) {
 
 function mainUI() {
   $app.html(templates.mainUI());
+
+  var $flashButton = $("#flash-button").on('click', flashApp);
+}
+
+function flashApp() {
+
+  var filePromises = appFiles.map(function (f) {
+    return $.ajax(codeUrl + "/" + f);
+  });
+
+  Promise.all(filePromises)
+  .then(function (files) {
+    console.log("finished downloading files");
+  }, function (err) {
+    showError();
+  });
 }
 
 function showError() {
