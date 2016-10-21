@@ -300,6 +300,10 @@ function parseCodes(encodedStr) {
 
   var codes = {};
 
+  if (encodedStr === "null") {
+    return codes;
+  }
+
   encodedStr.split(",").forEach(function (encoded) {
     var type = types[encoded[encoded.length - 1]];
     var code = encoded.slice(0, encoded.length - 1);
@@ -314,7 +318,7 @@ function parseCodes(encodedStr) {
 function displayCodes(codes) {
   var types = Object.keys(codes);
   if (types.length == 0) {
-    info("No codes. Awesome!");
+    log("No codes. Awesome!");
   }
   
   types.forEach(function (type) {
