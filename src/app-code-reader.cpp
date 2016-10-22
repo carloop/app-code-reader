@@ -26,6 +26,7 @@
 
 #include "application.h"
 #include "carloop/carloop.h"
+#include "blynk/blynk.h"
 
 #include "dtc.h"
 
@@ -42,12 +43,22 @@ void publishCodes();
 // Set up the Carloop hardware
 Carloop<CarloopRevision2> carloop;
 
+// Blynk transport
+const char auth[] = "80e193c57aef4ae6932332c6709d3a78";
+WidgetTerminal terminal(V3);
+
 // Set up the trouble code services
 CodeReader reader;
 CodeClearer clearer;
 
+inline void log(String message) {
+  Serial.println(message);
+  terminal.println(message);
+}
+
 void setup() {
   Serial.begin(9600);
+  Blynk.begin(auth);
   carloop.begin();
   reader.begin(carloop.can());
   clearer.begin(carloop.can());
@@ -58,7 +69,7 @@ void setup() {
 
 // Remote function to start reading codes
 int readCodes(String unused) {
-  Serial.println("Reading codes...");
+  log("Reading codes...");
   if (Particle.connected()) {
     Particle.publish("codes/start", PRIVATE);
   }
@@ -66,9 +77,17 @@ int readCodes(String unused) {
   return 0;
 }
 
+BLYNK_WRITE(V1) // Blynk V1 is read codes
+{
+  int pinData = param.asInt(); 
+  if (pinData) {
+    readCodes();
+  }
+}
+
 // Remote function to clear codes
 int clearCodes(String unused) {
-  Serial.println("Clearing codes...");
+  log("Clearing codes...");
   if (Particle.connected()) {
     Particle.publish("codes/clear", PRIVATE);
   }
@@ -76,10 +95,20 @@ int clearCodes(String unused) {
   return 0;
 }
 
+BLYNK_WRITE(V2) // Blynk V2 is clear codes
+{
+  int pinData = param.asInt(); 
+  if (pinData) {
+    clearCodes();
+  }
+}
+
 void loop() {
+  Blynk.run();
   processSerial();
   processReadingCodes();
   processClearingCodes();
+  terminal.flush();
 }
 
 void processSerial() {
@@ -110,7 +139,7 @@ void processReadingCodes() {
 // Particle events
 void publishCodes() {
   if (reader.getError()) {
-    Serial.println("Error while reading codes. Is Carloop connected to a car with the ignition on?");
+    log("Error while reading codes. Is Carloop connected to a car with the ignition on?");
     if (Particle.connected()) {
       Particle.publish("codes/error", PRIVATE);
     }
@@ -120,34 +149,36 @@ void publishCodes() {
   auto &codes = reader.getCodes();
 
   if (codes.empty()) {
-    Serial.println("No fault codes. Fantastic!");
+    log("No fault codes. Fantastic!");
   } else {
-    Serial.printlnf("Read %d codes", codes.size());
+    log(String::format("Read %d codes", codes.size()));
   }
 
   String result;
+  String line;
   for (auto it = codes.begin(); it != codes.end(); ++it) {
     auto code = *it;
     String codeStr;
     codeStr += code.letter;
     codeStr += String::format("%04X", code.code);
 
-    Serial.print(codeStr);
+    line = codeStr;
     switch (code.type) {
       case DTC::STORED_DTC:
-        Serial.print(" (current issue)");
+        line += " (current issue)";
         codeStr += 's';
         break;
       case DTC::PENDING_DTC:
-        Serial.print(" (pending issue)");
+        line += " (pending issue)";
         codeStr += 'p';
         break;
       case DTC::CLEARED_DTC:
-        Serial.print(" (cleared issue)");
+        line += " (cleared issue)";
         codeStr += 'c';
         break;
     }
-    Serial.println("");
+
+    log(line);
 
     if (result.length() > 0) {
       result += ",";
@@ -168,12 +199,12 @@ void processClearingCodes() {
   bool done = clearer.done();
   if (done && !previouslyDone) {
     if (clearer.getError()) {
-      Serial.println("Error while clearing codes. Is Carloop connected to a car with the ignition on?");
+      log("Error while clearing codes. Is Carloop connected to a car with the ignition on?");
       if (Particle.connected()) {
         Particle.publish("codes/error", PRIVATE);
       }
     } else {
-      Serial.println("Success!");
+      log("Success!");
       if (Particle.connected()) {
         Particle.publish("codes/cleared", PRIVATE);
       }

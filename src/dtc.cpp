@@ -81,13 +81,23 @@ void CodeReader::process() {
 
     case WAITING_FOR_CODES:
       if (millis() - readingCodesStart > timeout) {
-        DEBUG_PRINT("Timeout while reading codes");
-        state = IDLE;
-        error = true;
-        break;
+        if (codeTypeBeingRead == DTC::STORED_DTC) {
+          // Give up if there's no response to the first request
+          // ==> Carloop is not connected to a car or ECU is not turned on
+          DEBUG_PRINT("Timeout while reading codes");
+          state = IDLE;
+          error = true;
+          break;
+        } else {
+          // Continue if ECU doesn't respond to this service
+          done = true;
+        }
       }
 
-      done = receiveReadCodes();
+      if (!done) {
+        done = receiveReadCodes();
+      }
+
       if (done) {
         codeTypeBeingRead = (DTC::Type)((int)codeTypeBeingRead + 1);
         if (codeTypeBeingRead >= DTC::NUM_TYPES) {
