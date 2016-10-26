@@ -11,10 +11,7 @@ var appFiles = [
   "dtc.h",
   "OBDMessage.cpp",
   "OBDMessage.h",
-  "carloop/TinyGPS++.cpp",
-  "carloop/TinyGPS++.h",
-  "carloop/carloop.h",
-  "carloop/carloop.cpp",
+  "project.properties",
 ];
 
 var templates = {
