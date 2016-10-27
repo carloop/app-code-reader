@@ -24,8 +24,23 @@
   #else
     #define DEBUG_PRINT(format, ...) Serial.printlnf(format, ##__VA_ARGS__)
   #endif
+  inline void DEBUG_MESSAGE(const char *direction, const CANMessage &message) {
+    DEBUG_PRINT("%s %03x (%d): %02x %02x %02x %02x %02x %02x %02x %02x",
+      direction, message.id, message.len,
+      message.data[0],
+      message.data[1],
+      message.data[2],
+      message.data[3],
+      message.data[4],
+      message.data[5],
+      message.data[6],
+      message.data[7]
+    );
+  }
 #else
   #define DEBUG_PRINT(...)
+  inline void DEBUG_MESSAGE(const char *direction, const CANMessage &message) {
+  }
 #endif
 
 DTC::DTC(DTC::Type type, uint16_t code) {
@@ -63,7 +78,7 @@ void CodeReader::start() {
 //   - Store the codes
 // - If there is a timeout, stop with an error
 void CodeReader::process() {
-  bool done;
+  bool done = false;
   switch (state) {
     case START_READING_CODES:
       codes.clear();
@@ -89,7 +104,7 @@ void CodeReader::process() {
           error = true;
           break;
         } else {
-          // Continue if ECU doesn't respond to this service
+          DEBUG_PRINT("ECU didn't respond to this service. Continuing");
           done = true;
         }
       }
@@ -107,6 +122,7 @@ void CodeReader::process() {
         }
       }
       break;
+
     default:
       state = IDLE;
       break;
@@ -136,6 +152,7 @@ void CodeReader::transmitReadCodes(uint8_t service) {
   message.data[0] = 1;
   message.data[1] = service;
   can->transmit(message);
+  DEBUG_MESSAGE("TX", message);
 
   // Get our OBD message ready to receive the response
   obd.clear();
@@ -148,6 +165,9 @@ bool CodeReader::receiveReadCodes() {
 
   CANMessage message;
   if (can->receive(message)) {
+    if (message.id > 0x780) {
+      DEBUG_MESSAGE("RX", message);
+    }
     // if the received CAN message is from the ECU we expect
 
     if (message.id == OBD_FIRST_ECU_RESPONSE) {
@@ -159,7 +179,9 @@ bool CodeReader::receiveReadCodes() {
 
       if (needsFlowControl) {
         DEBUG_PRINT("Sending flow control");
-        can->transmit(obd.flowControlMessage());
+        CANMessage flowControl = obd.flowControlMessage();
+        can->transmit(flowControl);
+        DEBUG_MESSAGE("TX", flowControl);
       }
 
       // Parse code when we have all the data
@@ -238,7 +260,7 @@ void CodeClearer::start() {
 // - Wait for the full response (should alwasy be 1 CAN frame)
 // - If there is a timeout, stop with an error
 void CodeClearer::process() {
-  bool done;
+  bool done = false;
   switch (state) {
     case CLEAR_CODES:
       DEBUG_PRINT("Clearing codes");
@@ -281,6 +303,7 @@ void CodeClearer::transmitClearCodes() {
   message.data[1] = OBD_SERVICE_CLEAR_DTCS;
 
   can->transmit(message);
+  DEBUG_MESSAGE("TX", message);
   obd.clear();
 }
 
@@ -291,6 +314,10 @@ bool CodeClearer::receiveClearCodes() {
 
   CANMessage message;
   if (can->receive(message)) {
+    if (message.id > 0x780) {
+      DEBUG_MESSAGE("RX", message);
+    }
+
     // if the received CAN message is from the ECU we expect
     if (message.id == OBD_FIRST_ECU_RESPONSE) {
       DEBUG_PRINT("Got response %03x: %02x %02x %02x %02x %02x %02x %02x %02x", message.id, message.data[0], message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6], message.data[7]);
@@ -300,7 +327,9 @@ bool CodeClearer::receiveClearCodes() {
 
       if (needsFlowControl) {
         DEBUG_PRINT("Sending flow control");
-        can->transmit(obd.flowControlMessage());
+        CANMessage flowControl = obd.flowControlMessage();
+        can->transmit(flowControl);
+        DEBUG_MESSAGE("TX", flowControl);
       }
 
       // When we have all the data, don't bother checking the response
