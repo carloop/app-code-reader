@@ -26,7 +26,6 @@
 
 #include "application.h"
 #include "carloop/carloop.h"
-#include "blynk/blynk.h"
 
 #include "dtc.h"
 
@@ -43,22 +42,16 @@ void publishCodes();
 // Set up the Carloop hardware
 Carloop<CarloopRevision2> carloop;
 
-// Blynk transport
-const char auth[] = "80e193c57aef4ae6932332c6709d3a78";
-WidgetTerminal terminal(V3);
-
 // Set up the trouble code services
 CodeReader reader;
 CodeClearer clearer;
 
 inline void log(String message) {
   Serial.println(message);
-  terminal.println(message);
 }
 
 void setup() {
   Serial.begin(9600);
-  Blynk.begin(auth);
   carloop.begin();
   reader.begin(carloop.can());
   clearer.begin(carloop.can());
@@ -77,14 +70,6 @@ int readCodes(String unused) {
   return 0;
 }
 
-BLYNK_WRITE(V1) // Blynk V1 is read codes
-{
-  int pinData = param.asInt(); 
-  if (pinData) {
-    readCodes();
-  }
-}
-
 // Remote function to clear codes
 int clearCodes(String unused) {
   log("Clearing codes...");
@@ -95,20 +80,10 @@ int clearCodes(String unused) {
   return 0;
 }
 
-BLYNK_WRITE(V2) // Blynk V2 is clear codes
-{
-  int pinData = param.asInt(); 
-  if (pinData) {
-    clearCodes();
-  }
-}
-
 void loop() {
-  Blynk.run();
   processSerial();
   processReadingCodes();
   processClearingCodes();
-  terminal.flush();
 }
 
 void processSerial() {
