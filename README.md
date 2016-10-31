@@ -2,7 +2,7 @@
 
 Reads engine diagnostic trouble codes on CAN at 500 kbit and outputs them formatted to the USB Serial and published as Particle events.
 
-## [Flash it to your Carloop and use it right away](https://carloop.github.io/app-code-reader)
+## [Flash it to your Carloop and use it right away](https://www.carloop.io/apps/app-code-reader)
 
 ## Building
 
